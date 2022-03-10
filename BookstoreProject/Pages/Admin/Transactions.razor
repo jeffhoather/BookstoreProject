@@ -1,0 +1,44 @@
+﻿@page "/admin/transactions"
+@inherits OwningComponentBase<ITransactionRepository>
+
+<TransactionTable TableTitle="Not Shipped" Transactions="NotShippedTransactions"
+                  ButtonLabel="Shipped" TransactionSelected="CollectTransaction"></TransactionTable>
+
+<TransactionTable TableTitle="Shipped" Transactions="ShippedTransactions"
+                  ButtonLabel="Reset" TransactionSelected="ResetTransaction"></TransactionTable>
+
+<button class="btn btn-info" @onclick="@(x => UpdateData())">Refresh Data</button>
+
+
+@code {
+
+    public ITransactionRepository repo => Service;
+
+    public IEnumerable<Transaction> AllTransactions { get; set; }
+    public IEnumerable<Transaction> NotShippedTransactions { get; set; }
+    public IEnumerable<Transaction> ShippedTransactions { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await UpdateData();
+    }
+
+    public async Task UpdateData()
+    {
+        AllTransactions = await repo.Transactions.ToListAsync();
+        NotShippedTransactions = AllTransactions.Where(x => !x.TransactionCompleted);
+        ShippedTransactions = AllTransactions.Where(x => x.TransactionCompleted);
+    }
+
+    public void CollectTransaction(int id) => UpdateTransaction(id, true);
+
+    public void ResetTransaction(int id) => UpdateTransaction(id, false);
+
+    private void UpdateTransaction (int id, bool shipped)
+    {
+        Transaction t = repo.Transactions.FirstOrDefault(x => x.TransactionId == id);
+        t.TransactionCompleted = shipped;
+        repo.SaveTransaction(t);
+    }
+
+}
